@@ -123,7 +123,7 @@ F 3 "" H 6050 6500 50  0000 C CNN
 	1    6050 6500
 	1    0    0    -1  
 $EndComp
-Text Notes 6400 6450 0    60   ~ 0
+Text Notes 6250 6550 0    60   ~ 0
 OLED display
 Text Label 4100 4550 0    60   ~ 0
 SDA
@@ -295,11 +295,11 @@ F 3 "" H 7650 1800 50  0000 C CNN
 	1    7650 1800
 	1    0    0    -1  
 $EndComp
-Text Label 3450 3450 0    60   ~ 0
+Text Label 2600 3450 0    60   ~ 0
 -FASTEN
-Text Label 4400 5450 0    60   ~ 0
+Text Label 950  4350 0    60   ~ 0
 RST
-Text Label 4400 5550 0    60   ~ 0
+Text Label 950  4550 0    60   ~ 0
 -RST
 $Comp
 L 74LS02 U?
@@ -344,8 +344,6 @@ Text Label 7250 4900 0    60   ~ 0
 SLOWCLK
 Text Label 4350 5250 0    60   ~ 0
 -FASTEN
-Text Label 4400 5350 0    60   ~ 0
-SLOWCLK
 Wire Wire Line
 	4300 1550 5050 1550
 Wire Wire Line
@@ -367,9 +365,7 @@ Wire Wire Line
 Wire Wire Line
 	650  1600 900  1600
 Wire Wire Line
-	650  1000 650  1300
-Wire Wire Line
-	650  1300 650  1600
+	650  1000 650  1600
 Wire Wire Line
 	5850 6550 5250 6550
 Wire Wire Line
@@ -387,9 +383,7 @@ Wire Wire Line
 Wire Wire Line
 	4900 6450 4900 6550
 Wire Wire Line
-	2200 1300 2800 1300
-Wire Wire Line
-	2800 1300 3200 1300
+	2200 1300 3200 1300
 Wire Wire Line
 	3200 1050 2800 1050
 Wire Wire Line
@@ -398,26 +392,16 @@ Connection ~ 2800 1300
 Wire Wire Line
 	3200 1200 2900 1200
 Wire Wire Line
-	2900 950  2900 1200
-Wire Wire Line
-	2900 1200 2900 1500
+	2900 950  2900 1500
 Wire Wire Line
 	3200 950  2900 950 
 Connection ~ 2900 1200
 Wire Wire Line
 	5600 5150 5600 5400
 Wire Wire Line
-	5600 5400 5900 5400
+	5600 5400 6750 5400
 Wire Wire Line
-	5900 5400 6200 5400
-Wire Wire Line
-	6200 5400 6500 5400
-Wire Wire Line
-	6500 5400 6750 5400
-Wire Wire Line
-	6200 5150 6200 5400
-Wire Wire Line
-	6200 5400 6200 5550
+	6200 5150 6200 5550
 Wire Wire Line
 	6750 5400 6750 5150
 Connection ~ 6200 5400
@@ -465,15 +449,7 @@ Wire Wire Line
 Wire Wire Line
 	4050 5150 4450 5150
 Wire Bus Line
-	4550 2550 4550 2650
-Wire Bus Line
-	4550 2650 4550 2750
-Wire Bus Line
-	4550 2750 4550 4850
-Wire Bus Line
-	4550 4850 4550 4950
-Wire Bus Line
-	4550 4950 4550 5050
+	4550 2550 4550 5050
 Wire Wire Line
 	5050 2450 4650 2450
 Wire Wire Line
@@ -489,26 +465,22 @@ Wire Wire Line
 Wire Wire Line
 	6900 1900 6900 3450
 Wire Wire Line
-	6900 3450 4900 3450
-Wire Wire Line
-	4900 3450 3400 3450
+	6900 3450 2550 3450
 Wire Wire Line
 	5050 2850 4900 2850
 Wire Wire Line
 	4900 2850 4900 3450
 Connection ~ 4900 3450
 Wire Wire Line
-	4800 5450 4050 5450
+	1350 4350 600  4350
 Wire Wire Line
-	4800 5550 4050 5550
+	1350 4550 600  4550
 Wire Wire Line
 	7750 4700 7200 4700
 Wire Wire Line
 	7750 4900 7200 4900
 Wire Wire Line
-	8950 4800 9050 4800
-Wire Wire Line
-	9050 4800 11050 4800
+	8950 4800 11050 4800
 Wire Wire Line
 	9350 5100 9050 5100
 Wire Wire Line
@@ -528,4 +500,42 @@ Wire Wire Line
 	5250 4750 5250 6550
 Wire Wire Line
 	5150 4550 5150 6650
+Wire Wire Line
+	4050 5450 4800 5450
+Text Label 4350 5350 0    60   ~ 0
+-CTCLR
+Wire Wire Line
+	3200 1400 3200 3300
+Wire Wire Line
+	2550 3300 7900 3300
+Text Label 2600 3300 0    60   ~ 0
+-CTCLR
+Wire Wire Line
+	8400 2700 7900 2700
+Wire Wire Line
+	7900 2700 7900 3300
+Connection ~ 3200 3300
+Text Label 4400 5450 0    60   ~ 0
+SLOWCLK
+Wire Wire Line
+	8400 2000 8250 2000
+Wire Wire Line
+	8250 2000 8250 2850
+$Comp
+L GND #PWR?
+U 1 1 599C87C9
+P 8250 2850
+F 0 "#PWR?" H 8250 2600 50  0001 C CNN
+F 1 "GND" H 8250 2700 50  0000 C CNN
+F 2 "" H 8250 2850 50  0000 C CNN
+F 3 "" H 8250 2850 50  0000 C CNN
+	1    8250 2850
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8400 2200 8250 2200
+Connection ~ 8250 2200
+Wire Wire Line
+	8400 2400 8250 2400
+Connection ~ 8250 2400
 $EndSCHEMATC
