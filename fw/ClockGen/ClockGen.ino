@@ -99,8 +99,9 @@ uint8_t s_enabled;
 uint8_t s_mode;
 
 // Button debouncing
-Bounce s_btn1 = Bounce(); // pin 12
-Bounce s_btn2 = Bounce(); // pin 11
+Bounce s_btn1 = Bounce(); // pin 12, left
+Bounce s_btn2 = Bounce(); // pin 11, right
+Bounce s_btn3 = Bounce(); // pin 10, enable/disable
 uint8_t s_buttons = 0xFF; // bits corresponding to button readings, initially not pressed
 
 // Timestamp (for periodically updating the display)
@@ -116,6 +117,9 @@ void setup() {
   pinMode(11, INPUT_PULLUP);
   s_btn2.attach(11);
   s_btn2.interval(5);
+  pinMode(10, INPUT_PULLUP);
+  s_btn3.attach(10);
+  s_btn3.interval(5);
 
   // Initialize OLED display
   // Note that the Adafruit display uses address 0x3D, but the
@@ -147,6 +151,7 @@ void loop() {
   // Debounce buttons
   s_btn1.update();
   s_btn2.update();
+  s_btn3.update();
 
   // Debugging button input
   digitalWrite(2, s_btn1.read() ? HIGH : LOW);
@@ -154,12 +159,15 @@ void loop() {
 
   // Determine button events
   uint8_t current = 0xFF;
-  current = (current << 1) | (s_btn1.read() ? 1 : 0);
+  current = (current << 1) | (s_btn3.read() ? 1 : 0);
   current = (current << 1) | (s_btn2.read() ? 1 : 0);
+  current = (current << 1) | (s_btn1.read() ? 1 : 0);
   uint8_t evt1 = checkButton(s_buttons, current, 0);
   uint8_t evt2 = checkButton(s_buttons, current, 1);
+  uint8_t evt3 = checkButton(s_buttons, current, 2);
   handleButton1(evt1);
   handleButton2(evt2);
+  handleButton3(evt3);
   s_buttons = current;
 
   unsigned long now = millis();
@@ -191,6 +199,13 @@ void handleButton2(uint8_t evt) {
   }
 }
 
+void handleButton3(uint8_t evt) {
+  if (evt != PRESS) {
+    return;
+  }
+  s_enabled ^= 1;
+}
+
 uint8_t s_ticks;
 
 void updateDisplay() {
@@ -200,8 +215,8 @@ void updateDisplay() {
 
   if (s_enabled) {
     display.setTextColor(BLACK, WHITE);
-    display.drawRoundRect(4, 6, 30, 14, 4, WHITE);
-    display.setCursor(14, 10);
+    display.fillRoundRect(4, 6, 29, 15, 4, WHITE);
+    display.setCursor(13, 10);
     display.println("EN");
   } else {
     display.setTextColor(BLACK, WHITE);
@@ -213,7 +228,7 @@ void updateDisplay() {
   
   display.setTextSize(2);
   display.setTextColor(WHITE);
-  display.setCursor(16,32);
+  display.setCursor(16,36);
   char buffer[12];
   strcpy_P(buffer, (char*)pgm_read_word(&(s_modenames[s_mode])));
   display.println(buffer);
