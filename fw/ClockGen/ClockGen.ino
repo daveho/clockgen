@@ -97,6 +97,7 @@ const uint8_t NUM_MODES = (uint8_t) (sizeof(s_modes)/sizeof(Mode));
 // State data
 uint8_t s_enabled;
 uint8_t s_mode;
+uint8_t s_output = 0x1; // bit 0 is clock, bit 1 is reset
 
 // Button debouncing
 Bounce s_btn1 = Bounce(); // pin 12, left
@@ -206,7 +207,15 @@ void handleButton3(uint8_t evt) {
   s_enabled ^= 1;
 }
 
+#ifdef DEBUG_DISPLAY_UPDATE
 uint8_t s_ticks;
+#endif
+
+#define EN_DIS_X 0
+#define CLK_X     48
+#define CLK_IND_X (CLK_X+24)
+#define RST_X     96
+#define RST_IND_X (RST_X+24)
 
 void updateDisplay() {
   display.clearDisplay();
@@ -215,15 +224,33 @@ void updateDisplay() {
 
   if (s_enabled) {
     display.setTextColor(BLACK, WHITE);
-    display.fillRoundRect(4, 6, 29, 15, 4, WHITE);
-    display.setCursor(13, 10);
-    display.println("EN");
+    display.fillRoundRect(EN_DIS_X, 6, 29, 15, 4, WHITE);
+    display.setCursor(9, 10);
+    display.print("EN");
   } else {
     display.setTextColor(BLACK, WHITE);
-    display.drawRoundRect(4, 6, 29, 15, 4, WHITE);
+    display.drawRoundRect(EN_DIS_X, 6, 29, 15, 4, WHITE);
     display.setTextColor(WHITE);
-    display.setCursor(10, 10);
-    display.println("DIS");
+    display.setCursor(6, 10);
+    display.print("DIS");
+  }
+
+  display.setTextColor(WHITE);
+  display.setCursor(CLK_X, 10);
+  display.print("CLK");
+  display.drawCircle(CLK_IND_X, 13, 5, WHITE);
+  if (s_output & 1) {
+    // clock high
+    display.fillCircle(CLK_IND_X, 13, 2, WHITE);
+  }
+
+  display.setTextColor(WHITE);
+  display.setCursor(RST_X, 10);
+  display.print("RST");
+  display.drawCircle(RST_IND_X, 13, 5, WHITE);
+  if (s_output & 2) {
+    // reset high
+    display.fillCircle(RST_IND_X, 13, 2, WHITE);
   }
   
   display.setTextSize(2);
@@ -231,12 +258,14 @@ void updateDisplay() {
   display.setCursor(16,36);
   char buffer[12];
   strcpy_P(buffer, (char*)pgm_read_word(&(s_modenames[s_mode])));
-  display.println(buffer);
+  display.print(buffer);
 
+#ifdef DEBUG_DISPLAY_UPDATE
   display.setTextSize(1);
   display.setCursor(120, 56);
-  display.println((int) (s_ticks & 0xF), HEX);
+  display.print((int) (s_ticks & 0xF), HEX);
   s_ticks++;
+#endif
   
   display.display();
 }
