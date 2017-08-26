@@ -131,7 +131,7 @@ void setup() {
   s_ts = millis();
 }
 
-inline uint8_t checkButton(uint8_t last, uint8_t current, uint8_t bit) {
+uint8_t checkButton(uint8_t last, uint8_t current, uint8_t bit) {
   uint8_t lastBit = last & (1 << bit);
   uint8_t curBit = current & (1 << bit);
   if (lastBit == curBit) {
@@ -162,7 +162,7 @@ void loop() {
   handleButton2(evt2);
   s_buttons = current;
 
-  unsigned now = millis();
+  unsigned long now = millis();
   if (!s_ts || (now > s_ts && (now - s_ts) >= REFRESH_MS)) {
     updateDisplay();
     s_ts = now;
@@ -191,14 +191,38 @@ void handleButton2(uint8_t evt) {
   }
 }
 
+uint8_t s_ticks;
+
 void updateDisplay() {
   display.clearDisplay();
+
   display.setTextSize(1);
+
+  if (s_enabled) {
+    display.setTextColor(BLACK, WHITE);
+    display.drawRoundRect(4, 6, 30, 14, 4, WHITE);
+    display.setCursor(14, 10);
+    display.println("EN");
+  } else {
+    display.setTextColor(BLACK, WHITE);
+    display.drawRoundRect(4, 6, 29, 15, 4, WHITE);
+    display.setTextColor(WHITE);
+    display.setCursor(10, 10);
+    display.println("DIS");
+  }
+  
+  display.setTextSize(2);
   display.setTextColor(WHITE);
-  display.setCursor(0,0);
+  display.setCursor(16,32);
   char buffer[12];
   strcpy_P(buffer, (char*)pgm_read_word(&(s_modenames[s_mode])));
   display.println(buffer);
+
+  display.setTextSize(1);
+  display.setCursor(120, 56);
+  display.println((int) (s_ticks & 0xF), HEX);
+  s_ticks++;
+  
   display.display();
 }
 
