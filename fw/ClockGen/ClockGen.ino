@@ -9,6 +9,9 @@
 // display refresh interval (about 8 times per second)
 #define REFRESH_MS 125
 
+// port D bitmask for clock divisor selection pins (PD2..PD4)
+#define CDIV_SEL_MASK 0x1C
+
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
 
@@ -83,20 +86,21 @@ const Mode s_modes[] PROGMEM = {
   { SLOW, 5 },
   { SLOW, 6 },
   { SLOW, 7 },
-  { FAST, 0 },
-  { FAST, 1 },
-  { FAST, 2 },
-  { FAST, 3 },
-  { FAST, 4 },
-  { FAST, 5 },
-  { FAST, 6 },
   { FAST, 7 },
+  { FAST, 6 },
+  { FAST, 5 },
+  { FAST, 4 },
+  { FAST, 3 },
+  { FAST, 2 },
+  { FAST, 1 },
+  { FAST, 0 },
 };
 const uint8_t NUM_MODES = (uint8_t) (sizeof(s_modes)/sizeof(Mode));
 
 // State data
 uint8_t s_enabled;
 uint8_t s_mode;
+uint8_t s_nextMode;
 uint8_t s_output = 0x1; // bit 0 is clock, bit 1 is reset
 
 // Button debouncing
@@ -122,16 +126,23 @@ void setup() {
   s_btn3.attach(10);
   s_btn3.interval(5);
 
+  // Configure port D for clock divisor selection outputs
+  DDRD |= CDIV_SEL_MASK;
+//  pinMode(2, OUTPUT);
+//  pinMode(3, OUTPUT);
+//  pinMode(4, OUTPUT);
+  
+  PORTD = (PORTD & ~CDIV_SEL_MASK) | (7 << 2); // select slowest clock divisor
+//  digitalWrite(2, HIGH);
+//  digitalWrite(3, HIGH);
+//  digitalWrite(4, HIGH);
+
   // Initialize OLED display
   // Note that the Adafruit display uses address 0x3D, but the
   // cheap ebay displays seem to use 0x3C
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
 
   display.clearDisplay();
-
-  // Debugging
-  pinMode(2, OUTPUT);
-  pinMode(3, OUTPUT);
 
   s_ts = millis();
 }
@@ -154,10 +165,6 @@ void loop() {
   s_btn2.update();
   s_btn3.update();
 
-  // Debugging button input
-  digitalWrite(2, s_btn1.read() ? HIGH : LOW);
-  digitalWrite(3, s_btn2.read() ? HIGH : LOW);
-
   // Determine button events
   uint8_t current = 0xFF;
   current = (current << 1) | (s_btn3.read() ? 1 : 0);
@@ -178,15 +185,34 @@ void loop() {
   }
 }
 
+void onModeChange() {
+  // TODO: need to gracefully exit current mode, gracefully switch to next mode
+  s_mode = s_nextMode;
+
+  // Copy Mode from progmem
+  Mode mode;
+  memcpy_P(&mode, &s_modes[s_mode], sizeof(Mode));
+  
+  if (mode.type == FAST) {
+    // update clock divisor
+    PORTD = (PORTD & ~CDIV_SEL_MASK) | (mode.speed << 2);
+//    uint8_t speed = mode.speed;
+//    digitalWrite(2, (speed & 1) ? HIGH : LOW);
+//    digitalWrite(3, (speed & 2) ? HIGH : LOW);
+//    digitalWrite(4, (speed & 4) ? HIGH : LOW);
+  }
+}
+
 void handleButton1(uint8_t evt) {
   if (evt != PRESS) {
     return;
   }
   if (s_mode == 0) {
-    s_mode = NUM_MODES - 1;
+    s_nextMode = NUM_MODES - 1;
   } else {
-    s_mode--;
+    s_nextMode = s_mode - 1;
   }
+  onModeChange();
 }
 
 void handleButton2(uint8_t evt) {
@@ -194,10 +220,11 @@ void handleButton2(uint8_t evt) {
     return;
   }
   if (s_mode == NUM_MODES - 1) {
-    s_mode = 0;
+    s_nextMode = 0;
   } else {
-    s_mode++;
+    s_nextMode = s_mode + 1;
   }
+  onModeChange();
 }
 
 void handleButton3(uint8_t evt) {
