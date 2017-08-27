@@ -12,6 +12,10 @@
 // port D bitmask for clock divisor selection pins (PD2..PD4)
 #define CDIV_SEL_MASK 0x1C
 
+// pins for -FASTEN and -CTCLR signals
+#define FASTEN_PIN 5
+#define CTCLR_PIN  6
+
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
 
@@ -138,15 +142,15 @@ void setup() {
 //  digitalWrite(4, HIGH);
 
   // Enable outputs for -CTCLR, -FASTEN signals
-  pinMode(5, OUTPUT);
-  pinMode(6, OUTPUT);
-  digitalWrite(5, HIGH); // initially not asserted
-  digitalWrite(6, HIGH); // initially not asserted
+  pinMode(FASTEN_PIN, OUTPUT);
+  pinMode(CTCLR_PIN, OUTPUT);
+  digitalWrite(FASTEN_PIN, HIGH); // initially not asserted
+  digitalWrite(CTCLR_PIN, HIGH);  // initially not asserted
 
   // Reset fast clock counter and output flip flop
-  digitalWrite(6, LOW);
+  digitalWrite(CTCLR_PIN, LOW);
   delay(1);
-  digitalWrite(6, HIGH);
+  digitalWrite(CTCLR_PIN, HIGH);
 
   // Initialize OLED display
   // Note that the Adafruit display uses address 0x3D, but the
@@ -244,9 +248,9 @@ void handleButton3(uint8_t evt) {
   }
   s_enabled ^= 1;
   if (s_enabled) {
-    digitalWrite(5, LOW);  // asserted
+    digitalWrite(FASTEN_PIN, LOW);  // asserted
   } else {
-    digitalWrite(5, HIGH); // deasserted
+    digitalWrite(FASTEN_PIN, HIGH); // deasserted
   }
 }
 
