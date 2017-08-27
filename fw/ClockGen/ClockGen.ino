@@ -137,6 +137,17 @@ void setup() {
 //  digitalWrite(3, HIGH);
 //  digitalWrite(4, HIGH);
 
+  // Enable outputs for -CTCLR, -FASTEN signals
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+  digitalWrite(5, HIGH); // initially not asserted
+  digitalWrite(6, HIGH); // initially not asserted
+
+  // Reset fast clock counter and output flip flop
+  digitalWrite(6, LOW);
+  delay(1);
+  digitalWrite(6, HIGH);
+
   // Initialize OLED display
   // Note that the Adafruit display uses address 0x3D, but the
   // cheap ebay displays seem to use 0x3C
@@ -232,6 +243,11 @@ void handleButton3(uint8_t evt) {
     return;
   }
   s_enabled ^= 1;
+  if (s_enabled) {
+    digitalWrite(5, LOW);  // asserted
+  } else {
+    digitalWrite(5, HIGH); // deasserted
+  }
 }
 
 #ifdef DEBUG_DISPLAY_UPDATE
