@@ -19,8 +19,9 @@
 // SLOWCLK pin
 #define SLOWCLK_PIN 7
 
-// RST pin
-#define RST_PIN 14
+// RST and -RST pin
+#define RST_PIN  14
+#define NRST_PIN 15 // "N" stands for "Negated", i.e., active low
 
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
@@ -152,6 +153,14 @@ void setup() {
   // Enable SLOWCLK output
   pinMode(SLOWCLK_PIN, OUTPUT);
 
+  // Enable RST and -RST outputs
+  pinMode(RST_PIN, OUTPUT);
+  pinMode(NRST_PIN, OUTPUT);
+
+  // Initially, reset is not asserted
+  digitalWrite(RST_PIN, LOW);
+  digitalWrite(NRST_PIN, HIGH);
+
   // Reset fast clock counter and output flip flop
   digitalWrite(CTCLR_PIN, LOW);
   delay(1);
@@ -221,10 +230,12 @@ void loop() {
   uint8_t evt2 = checkButton(s_buttons, current, 1);
   uint8_t evt3 = checkButton(s_buttons, current, 2);
   uint8_t evt4 = checkButton(s_buttons, current, 3);
+  uint8_t evt5 = checkButton(s_buttons, current, 4);
   handleButton1(evt1);
   handleButton2(evt2);
   handleButton3(evt3);
   handleButton4(evt4);
+  handleButton5(evt5);
   s_buttons = current;
 
   unsigned long now = millis();
@@ -332,6 +343,22 @@ void handleButton4(uint8_t evt) {
   } else {
     digitalWrite(SLOWCLK_PIN, LOW);  // will make clock output go high
     digitalWrite(LED_BUILTIN, HIGH);
+  }
+}
+
+// Reset button (pressed=reset asserted)
+void handleButton5(uint8_t evt) {
+  if (evt == NO_CHANGE) {
+    return;
+  }
+  if (evt == PRESS) {
+    // assert reset signals
+    digitalWrite(RST_PIN, HIGH);
+    digitalWrite(NRST_PIN, LOW);
+  } else { // release
+    // deassert reset signals
+    digitalWrite(RST_PIN, LOW);
+    digitalWrite(NRST_PIN, HIGH);
   }
 }
 
