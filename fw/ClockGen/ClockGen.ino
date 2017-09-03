@@ -46,6 +46,7 @@ struct Mode {
 };
 
 // Mode names (as strings in program memory)
+// The fast modes assume a 4 MHz oscillator
 const char modename_manual[] PROGMEM = "Manual";
 const char modename_slow0[] PROGMEM = "1 Hz";
 const char modename_slow1[] PROGMEM = "2 Hz";
@@ -55,14 +56,14 @@ const char modename_slow4[] PROGMEM = "16 Hz";
 const char modename_slow5[] PROGMEM = "32 Hz";
 const char modename_slow6[] PROGMEM = "64 Hz";
 const char modename_slow7[] PROGMEM = "128 Hz";
-const char modename_fast0[] PROGMEM = "14.4 KHz";
-const char modename_fast1[] PROGMEM = "28.8 KHz";
-const char modename_fast2[] PROGMEM = "57.6 KHz";
-const char modename_fast3[] PROGMEM = "115 KHz";
-const char modename_fast4[] PROGMEM = "230 KHz";
-const char modename_fast5[] PROGMEM = "461 KHz";
-const char modename_fast6[] PROGMEM = "921 KHz";
-const char modename_fast7[] PROGMEM = "1.84 MHz";
+const char modename_fast0[] PROGMEM = "15.62 KHz";
+const char modename_fast1[] PROGMEM = "31.25 KHz";
+const char modename_fast2[] PROGMEM = "62.5 KHz";
+const char modename_fast3[] PROGMEM = "125 KHz";
+const char modename_fast4[] PROGMEM = "250 KHz";
+const char modename_fast5[] PROGMEM = "500 KHz";
+const char modename_fast6[] PROGMEM = "1 MHz";
+const char modename_fast7[] PROGMEM = "2 MHz";
 
 // Mode name table (see https://www.arduino.cc/en/Reference/PROGMEM)
 const char* const s_modenames[] PROGMEM = {
