@@ -106,14 +106,13 @@ const uint8_t NUM_MODES = (uint8_t) (sizeof(s_modes)/sizeof(Mode));
 
 // State data
 uint8_t s_enabled;
-uint8_t s_mode;
-uint8_t s_nextMode;
-uint8_t s_output = 0x1; // bit 0 is clock, bit 1 is reset
+uint8_t s_modeNum;
+uint8_t s_nextModeNum;
+Mode s_curMode;
+uint8_t s_output = 0; // bit 0 is slowclock, bit 1 is reset
 
 // Button debouncing
-Bounce s_btn1 = Bounce(); // pin 12, left
-Bounce s_btn2 = Bounce(); // pin 11, right
-Bounce s_btn3 = Bounce(); // pin 10, enable/disable
+Bounce s_btns[5];
 uint8_t s_buttons = 0xFF; // bits corresponding to button readings, initially not pressed
 
 // Timestamp (for periodically updating the display)
@@ -125,27 +124,23 @@ uint16_t s_tcnt;
 void setup() {
   Serial.begin(9600);
 
+  // Initialize current mode: the timer1 interrupt handler
+  // will use this data to determine whether to generate the
+  // slow clock
+  memcpy_P(&s_curMode, &s_modes[s_modeNum], sizeof(Mode));
+
   // Initialize buttons
-  pinMode(12, INPUT_PULLUP);
-  s_btn1.attach(12);
-  s_btn1.interval(5);
-  pinMode(11, INPUT_PULLUP);
-  s_btn2.attach(11);
-  s_btn2.interval(5);
-  pinMode(10, INPUT_PULLUP);
-  s_btn3.attach(10);
-  s_btn3.interval(5);
+  for (uint8_t i = 0; i < 5; i++) {
+    uint8_t pin = 12 - i;
+    pinMode(pin, INPUT_PULLUP);
+    s_btns[i].attach(pin);
+    s_btns[i].interval(5);
+  }
 
   // Configure port D for clock divisor selection outputs
   DDRD |= CDIV_SEL_MASK;
-//  pinMode(2, OUTPUT);
-//  pinMode(3, OUTPUT);
-//  pinMode(4, OUTPUT);
   
   PORTD = (PORTD & ~CDIV_SEL_MASK) | (7 << 2); // select slowest clock divisor
-//  digitalWrite(2, HIGH);
-//  digitalWrite(3, HIGH);
-//  digitalWrite(4, HIGH);
 
   // Enable outputs for -CTCLR, -FASTEN signals
   pinMode(FASTEN_PIN, OUTPUT);
@@ -212,15 +207,15 @@ uint8_t checkButton(uint8_t last, uint8_t current, uint8_t bit) {
 
 void loop() {
   // Debounce buttons
-  s_btn1.update();
-  s_btn2.update();
-  s_btn3.update();
+  for (uint8_t i = 0; i < 5; i++) {
+    s_btns[i].update();
+  }
 
   // Determine button events
   uint8_t current = 0xFF;
-  current = (current << 1) | (s_btn3.read() ? 1 : 0);
-  current = (current << 1) | (s_btn2.read() ? 1 : 0);
-  current = (current << 1) | (s_btn1.read() ? 1 : 0);
+  for (uint8_t i = 0; i < 5; i++) {
+    current = (current << 1) | (s_btns[4-i].read() ? 1 : 0);
+  }
   uint8_t evt1 = checkButton(s_buttons, current, 0);
   uint8_t evt2 = checkButton(s_buttons, current, 1);
   uint8_t evt3 = checkButton(s_buttons, current, 2);
@@ -237,31 +232,31 @@ void loop() {
 }
 
 void onModeChange() {
+  
+  
+  noInterrupts();
   // TODO: need to gracefully exit current mode, gracefully switch to next mode
-  s_mode = s_nextMode;
+  s_modeNum = s_nextModeNum;
 
   // Copy Mode from progmem
-  Mode mode;
-  memcpy_P(&mode, &s_modes[s_mode], sizeof(Mode));
+  memcpy_P(&s_curMode, &s_modes[s_modeNum], sizeof(Mode));
   
-  if (mode.type == FAST) {
+  if (s_curMode.type == FAST) {
     // update clock divisor
-    PORTD = (PORTD & ~CDIV_SEL_MASK) | (mode.speed << 2);
-//    uint8_t speed = mode.speed;
-//    digitalWrite(2, (speed & 1) ? HIGH : LOW);
-//    digitalWrite(3, (speed & 2) ? HIGH : LOW);
-//    digitalWrite(4, (speed & 4) ? HIGH : LOW);
+    PORTD = (PORTD & ~CDIV_SEL_MASK) | (s_curMode.speed << 2);
   }
+
+  interrupts();
 }
 
 void handleButton1(uint8_t evt) {
   if (evt != PRESS) {
     return;
   }
-  if (s_mode == 0) {
-    s_nextMode = NUM_MODES - 1;
+  if (s_modeNum == 0) {
+    s_nextModeNum = NUM_MODES - 1;
   } else {
-    s_nextMode = s_mode - 1;
+    s_nextModeNum = s_modeNum - 1;
   }
   onModeChange();
 }
@@ -270,10 +265,10 @@ void handleButton2(uint8_t evt) {
   if (evt != PRESS) {
     return;
   }
-  if (s_mode == NUM_MODES - 1) {
-    s_nextMode = 0;
+  if (s_modeNum == NUM_MODES - 1) {
+    s_nextModeNum = 0;
   } else {
-    s_nextMode = s_mode + 1;
+    s_nextModeNum = s_modeNum + 1;
   }
   onModeChange();
 }
@@ -340,7 +335,7 @@ void updateDisplay() {
   display.setTextColor(WHITE);
   display.setCursor(16,36);
   char buffer[12];
-  strcpy_P(buffer, (char*)pgm_read_word(&(s_modenames[s_mode])));
+  strcpy_P(buffer, (char*)pgm_read_word(&(s_modenames[s_modeNum])));
   display.print(buffer);
 
 #ifdef DEBUG_DISPLAY_UPDATE
