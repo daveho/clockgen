@@ -159,6 +159,9 @@ void setup() {
   // For testing slow clock timer interrupt
   pinMode(LED_BUILTIN, OUTPUT);
 
+  // Start from known-good default outputs
+  setDefaultOutputs();
+
   // Configure timer1 for slowclock generation
   // See: http://www.hobbytronics.co.uk/arduino-timer-interrupts
   noInterrupts();
@@ -180,8 +183,11 @@ void setup() {
   s_ts = millis();
 }
 
-uint8_t s_toggle;
+// Timer1 interrupt handler: generates slowclock output
 ISR(TIMER1_OVF_vect) {
+  if (s_curMode.type != SLOW || !s_enabled) {
+    return;
+  }
   uint8_t poll = (s_slowCount & (1 << s_curMode.speed)) ? LOW : HIGH;
   digitalWrite(LED_BUILTIN, poll);
   s_slowCount++;
@@ -227,6 +233,15 @@ void loop() {
   }
 }
 
+void setDefaultOutputs() {
+  // Disable fast clock
+  digitalWrite(FASTEN_PIN, HIGH);
+
+  // Set slow clock to default (low, producing high clock output when inverted)
+  digitalWrite(SLOWCLK_PIN, LOW);
+  digitalWrite(LED_BUILTIN, HIGH);
+}
+
 void onModeChange() {
   noInterrupts();
   
@@ -235,8 +250,8 @@ void onModeChange() {
   // Copy Mode from progmem
   memcpy_P(&s_curMode, &s_modes[s_modeNum], sizeof(Mode));
 
-  // Disable fast clock
-  digitalWrite(FASTEN_PIN, HIGH);
+  // Start from known-good default outputs
+  setDefaultOutputs();
   
   if (s_curMode.type == FAST) {
     // update clock divisor
@@ -250,6 +265,9 @@ void onModeChange() {
   } else if (s_curMode.type == SLOW) {
     // reset slow counter
     s_slowCount = 0;
+  } else {
+    // Manual mode: set slowclock output to be consistent with toggle input
+    digitalWrite(SLOWCLK_PIN, s_btns[3].read() ? LOW : HIGH);
   }
 
   // nothing needed to be done for manual mode?
@@ -257,6 +275,7 @@ void onModeChange() {
   interrupts();
 }
 
+// Left button (select previous mode)
 void handleButton1(uint8_t evt) {
   if (evt != PRESS) {
     return;
@@ -269,6 +288,7 @@ void handleButton1(uint8_t evt) {
   onModeChange();
 }
 
+// Right button (select next mode)
 void handleButton2(uint8_t evt) {
   if (evt != PRESS) {
     return;
@@ -281,18 +301,22 @@ void handleButton2(uint8_t evt) {
   onModeChange();
 }
 
+// Enable/disable button
 void handleButton3(uint8_t evt) {
   if (evt != PRESS) {
     return;
   }
   s_enabled ^= 1;
   if (s_enabled) {
-    digitalWrite(FASTEN_PIN, LOW);  // asserted
+    // Enable the currently-selected mode
+    onModeChange();
   } else {
-    digitalWrite(FASTEN_PIN, HIGH); // deasserted
+    // Reset to default outputs
+    setDefaultOutputs();
   }
 }
 
+// Manual slowclock toggle button (only allowed in manual mode)
 void handleButton4(uint8_t evt) {
   if (!s_enabled || s_curMode.type != MANUAL || evt == NO_CHANGE) {
     return;
