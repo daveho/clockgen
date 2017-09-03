@@ -326,8 +326,10 @@ void handleButton4(uint8_t evt) {
   // the NOR gate that combines the slow and fast clock signals)
   if (evt == PRESS) {
     digitalWrite(SLOWCLK_PIN, HIGH); // will make clock output go low
+    digitalWrite(LED_BUILTIN, LOW);
   } else {
     digitalWrite(SLOWCLK_PIN, LOW);  // will make clock output go high
+    digitalWrite(LED_BUILTIN, HIGH);
   }
 }
 
