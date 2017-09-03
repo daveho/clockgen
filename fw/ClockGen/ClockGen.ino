@@ -252,22 +252,25 @@ void onModeChange() {
 
   // Start from known-good default outputs
   setDefaultOutputs();
-  
-  if (s_curMode.type == FAST) {
-    // update clock divisor
-    PORTD = (PORTD & ~CDIV_SEL_MASK) | (s_curMode.speed << 2);
-    // reset fastclock counter
-    digitalWrite(CTCLR_PIN, LOW);
-    delayMicroseconds(10);
-    digitalWrite(CTCLR_PIN, HIGH);
-    // reenable fast clock
-    digitalWrite(FASTEN_PIN, LOW);
-  } else if (s_curMode.type == SLOW) {
-    // reset slow counter
-    s_slowCount = 0;
-  } else {
-    // Manual mode: set slowclock output to be consistent with toggle input
-    digitalWrite(SLOWCLK_PIN, s_btns[3].read() ? LOW : HIGH);
+
+  if (s_enabled) {
+    // Enable new mode
+    if (s_curMode.type == FAST) {
+      // update clock divisor
+      PORTD = (PORTD & ~CDIV_SEL_MASK) | (s_curMode.speed << 2);
+      // reset fastclock counter
+      digitalWrite(CTCLR_PIN, LOW);
+      delayMicroseconds(10);
+      digitalWrite(CTCLR_PIN, HIGH);
+      // reenable fast clock
+      digitalWrite(FASTEN_PIN, LOW);
+    } else if (s_curMode.type == SLOW) {
+      // reset slow counter
+      s_slowCount = 0;
+    } else {
+      // Manual mode: set slowclock output to be consistent with toggle input
+      digitalWrite(SLOWCLK_PIN, s_btns[3].read() ? LOW : HIGH);
+    }
   }
 
   // nothing needed to be done for manual mode?
