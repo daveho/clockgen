@@ -16,6 +16,9 @@
 #define FASTEN_PIN 5
 #define CTCLR_PIN  6
 
+// SLOWCLK pin
+#define SLOWCLK_PIN 7
+
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
 
@@ -116,6 +119,9 @@ uint8_t s_buttons = 0xFF; // bits corresponding to button readings, initially no
 // Timestamp (for periodically updating the display)
 unsigned long s_ts;
 
+// Timer interrupt counter
+uint16_t s_tcnt;
+
 void setup() {
   Serial.begin(9600);
 
@@ -147,10 +153,28 @@ void setup() {
   digitalWrite(FASTEN_PIN, HIGH); // initially not asserted
   digitalWrite(CTCLR_PIN, HIGH);  // initially not asserted
 
+  // Enable SLOWCLK output
+  pinMode(SLOWCLK_PIN, OUTPUT);
+
   // Reset fast clock counter and output flip flop
   digitalWrite(CTCLR_PIN, LOW);
   delay(1);
   digitalWrite(CTCLR_PIN, HIGH);
+
+  // For testing slow clock timer interrupt
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  // Configure timer1 for slowclock generation
+  // See: http://www.hobbytronics.co.uk/arduino-timer-interrupts
+  noInterrupts();
+  TCCR1A = 0;
+  TCCR1B = 0;
+  //s_tcnt = 64559; // 65536 - (16000000/256/64) (not exact, but close)
+  s_tcnt = 34286;   // preload timer 65536-16MHz/256/2Hz
+  TCNT1 = s_tcnt;            // preload timer
+  TCCR1B |= (1 << CS12);    // 256 prescaler 
+  TIMSK1 |= (1 << TOIE1);   // enable timer overflow interrupt
+  interrupts();
 
   // Initialize OLED display
   // Note that the Adafruit display uses address 0x3D, but the
@@ -160,6 +184,16 @@ void setup() {
   display.clearDisplay();
 
   s_ts = millis();
+}
+
+uint8_t s_toggle;
+ISR(TIMER1_OVF_vect) {
+  if (s_toggle) {
+    digitalWrite(LED_BUILTIN, HIGH);
+  } else {
+    digitalWrite(LED_BUILTIN, LOW);
+  }
+  s_toggle ^= 1;
 }
 
 uint8_t checkButton(uint8_t last, uint8_t current, uint8_t bit) {
