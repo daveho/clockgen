@@ -298,11 +298,12 @@ void handleButton4(uint8_t evt) {
     return;
   }
   // we're in manual mode, so drive SLOWCLK directly from
-  // the button input
+  // the button input (recall that SLOWCLK is inverted by
+  // the NOR gate that combines the slow and fast clock signals)
   if (evt == PRESS) {
-    digitalWrite(SLOWCLK_PIN, LOW);
+    digitalWrite(SLOWCLK_PIN, HIGH); // will make clock output go low
   } else {
-    digitalWrite(SLOWCLK_PIN, HIGH);
+    digitalWrite(SLOWCLK_PIN, LOW);  // will make clock output go high
   }
 }
 
@@ -340,7 +341,10 @@ void updateDisplay() {
   display.drawCircle(CLK_IND_X, 13, 5, WHITE);
   // The clock inidicator is only meaningful in manual mode
   if (s_curMode.type == MANUAL) {
-    if (digitalRead(SLOWCLK_PIN) == HIGH) {
+    // keep in mind that the SLOWCLK output is inverted
+    // by the NOR gate that combines the slow and fast
+    // clock signals
+    if (digitalRead(SLOWCLK_PIN) == LOW) {
       display.fillCircle(CLK_IND_X, 13, 2, WHITE);
     }
   }
