@@ -194,6 +194,8 @@ ISR(TIMER1_OVF_vect) {
     digitalWrite(LED_BUILTIN, LOW);
   }
   s_toggle ^= 1;
+
+  TCNT1 = s_tcnt;
 }
 
 uint8_t checkButton(uint8_t last, uint8_t current, uint8_t bit) {
