@@ -273,8 +273,6 @@ void onModeChange() {
     }
   }
 
-  // nothing needed to be done for manual mode?
-
   interrupts();
 }
 
