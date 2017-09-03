@@ -44,14 +44,14 @@ struct Mode {
 
 // Mode names (as strings in program memory)
 const char modename_manual[] PROGMEM = "Manual";
-const char modename_slow0[] PROGMEM = ".5 Hz";
-const char modename_slow1[] PROGMEM = "1 Hz";
-const char modename_slow2[] PROGMEM = "2 Hz";
-const char modename_slow3[] PROGMEM = "4 Hz";
-const char modename_slow4[] PROGMEM = "8 Hz";
-const char modename_slow5[] PROGMEM = "16 Hz";
-const char modename_slow6[] PROGMEM = "32 Hz";
-const char modename_slow7[] PROGMEM = "64 Hz";
+const char modename_slow0[] PROGMEM = "1 Hz";
+const char modename_slow1[] PROGMEM = "2 Hz";
+const char modename_slow2[] PROGMEM = "4 Hz";
+const char modename_slow3[] PROGMEM = "8 Hz";
+const char modename_slow4[] PROGMEM = "16 Hz";
+const char modename_slow5[] PROGMEM = "32 Hz";
+const char modename_slow6[] PROGMEM = "64 Hz";
+const char modename_slow7[] PROGMEM = "128 Hz";
 const char modename_fast0[] PROGMEM = "14.4 KHz";
 const char modename_fast1[] PROGMEM = "28.8 KHz";
 const char modename_fast2[] PROGMEM = "57.6 KHz";
@@ -85,22 +85,22 @@ const char* const s_modenames[] PROGMEM = {
 // Modes
 const Mode s_modes[] PROGMEM = {
   { MANUAL, 0 },
-  { SLOW, 0 },
-  { SLOW, 1 },
-  { SLOW, 2 },
-  { SLOW, 3 },
-  { SLOW, 4 },
-  { SLOW, 5 },
+  { SLOW, 7 }, // slowest slow mode
   { SLOW, 6 },
-  { SLOW, 7 },
-  { FAST, 7 },
+  { SLOW, 5 },
+  { SLOW, 4 },
+  { SLOW, 3 },
+  { SLOW, 2 },
+  { SLOW, 1 },
+  { SLOW, 0 }, // fastest slow mode
+  { FAST, 7 }, // slowest fast mode
   { FAST, 6 },
   { FAST, 5 },
   { FAST, 4 },
   { FAST, 3 },
   { FAST, 2 },
   { FAST, 1 },
-  { FAST, 0 },
+  { FAST, 0 }, // fastest fast mode
 };
 const uint8_t NUM_MODES = (uint8_t) (sizeof(s_modes)/sizeof(Mode));
 
@@ -109,7 +109,8 @@ uint8_t s_enabled;
 uint8_t s_modeNum;
 uint8_t s_nextModeNum;
 Mode s_curMode;
-uint8_t s_output = 0; // bit 0 is slowclock, bit 1 is reset
+uint8_t s_output;    // bit 0 is slowclock, bit 1 is reset
+uint8_t s_slowCount; // used to generate the slow clock frequencies
 
 // Button debouncing
 Bounce s_btns[5];
@@ -119,7 +120,7 @@ uint8_t s_buttons = 0xFF; // bits corresponding to button readings, initially no
 unsigned long s_ts;
 
 // Timer interrupt counter
-uint16_t s_tcnt;
+//uint16_t s_tcnt;
 
 void setup() {
   Serial.begin(9600);
@@ -164,10 +165,9 @@ void setup() {
   noInterrupts();
   TCCR1A = 0;
   TCCR1B = 0;
-  //s_tcnt = 64559; // 65536 - (16000000/256/64) (not exact, but close)
-  s_tcnt = 34286;   // preload timer 65536-16MHz/256/2Hz
-  TCNT1 = s_tcnt;            // preload timer
-  TCCR1B |= (1 << CS12);    // 256 prescaler 
+  // We'll configure timer1 to overflow 256 times per second
+  TCNT1 = 3036;             // preload timer 65536-16MHz/256Hz
+  TCCR1B |= (1 << CS10);    // no prescaler
   TIMSK1 |= (1 << TOIE1);   // enable timer overflow interrupt
   interrupts();
 
@@ -183,14 +183,9 @@ void setup() {
 
 uint8_t s_toggle;
 ISR(TIMER1_OVF_vect) {
-  if (s_toggle) {
-    digitalWrite(LED_BUILTIN, HIGH);
-  } else {
-    digitalWrite(LED_BUILTIN, LOW);
-  }
-  s_toggle ^= 1;
-
-  TCNT1 = s_tcnt;
+  uint8_t poll = (s_slowCount & (1 << s_curMode.speed)) ? LOW : HIGH;
+  digitalWrite(LED_BUILTIN, poll);
+  s_slowCount++;
 }
 
 uint8_t checkButton(uint8_t last, uint8_t current, uint8_t bit) {
@@ -232,19 +227,32 @@ void loop() {
 }
 
 void onModeChange() {
-  
-  
   noInterrupts();
+  
   // TODO: need to gracefully exit current mode, gracefully switch to next mode
   s_modeNum = s_nextModeNum;
 
   // Copy Mode from progmem
   memcpy_P(&s_curMode, &s_modes[s_modeNum], sizeof(Mode));
+
+  // Disable fast clock
+  digitalWrite(FASTEN_PIN, HIGH);
   
   if (s_curMode.type == FAST) {
     // update clock divisor
     PORTD = (PORTD & ~CDIV_SEL_MASK) | (s_curMode.speed << 2);
+    // reset fastclock counter
+    digitalWrite(CTCLR_PIN, LOW);
+    delayMicroseconds(10);
+    digitalWrite(CTCLR_PIN, HIGH);
+    // reenable fast clock
+    digitalWrite(FASTEN_PIN, LOW);
+  } else if (s_curMode.type == SLOW) {
+    // reset slow counter
+    s_slowCount = 0;
   }
+
+  // nothing needed to be done for manual mode?
 
   interrupts();
 }
@@ -317,8 +325,10 @@ void updateDisplay() {
   display.setCursor(CLK_X, 10);
   display.print("CLK");
   display.drawCircle(CLK_IND_X, 13, 5, WHITE);
-  if (s_output & 1) {
-    // clock high
+  if (!(s_output & 1)) {
+    // manual/slow clock high, recall that the output is
+    // inverted by the NOR gate that combines the fast and
+    // slow clock outputs
     display.fillCircle(CLK_IND_X, 13, 2, WHITE);
   }
 
