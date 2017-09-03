@@ -19,6 +19,9 @@
 // SLOWCLK pin
 #define SLOWCLK_PIN 7
 
+// RST pin
+#define RST_PIN 14
+
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
 
@@ -109,7 +112,6 @@ uint8_t s_enabled;
 uint8_t s_modeNum;
 uint8_t s_nextModeNum;
 Mode s_curMode;
-uint8_t s_output;    // bit 0 is slowclock, bit 1 is reset
 uint8_t s_slowCount; // used to generate the slow clock frequencies
 
 // Button debouncing
@@ -118,9 +120,6 @@ uint8_t s_buttons = 0xFF; // bits corresponding to button readings, initially no
 
 // Timestamp (for periodically updating the display)
 unsigned long s_ts;
-
-// Timer interrupt counter
-//uint16_t s_tcnt;
 
 void setup() {
   Serial.begin(9600);
@@ -141,7 +140,7 @@ void setup() {
   // Configure port D for clock divisor selection outputs
   DDRD |= CDIV_SEL_MASK;
   
-  PORTD = (PORTD & ~CDIV_SEL_MASK) | (7 << 2); // select slowest clock divisor
+  PORTD = (PORTD & ~CDIV_SEL_MASK) | (7 << 2); // select slowest fastclock divisor
 
   // Enable outputs for -CTCLR, -FASTEN signals
   pinMode(FASTEN_PIN, OUTPUT);
@@ -214,9 +213,11 @@ void loop() {
   uint8_t evt1 = checkButton(s_buttons, current, 0);
   uint8_t evt2 = checkButton(s_buttons, current, 1);
   uint8_t evt3 = checkButton(s_buttons, current, 2);
+  uint8_t evt4 = checkButton(s_buttons, current, 3);
   handleButton1(evt1);
   handleButton2(evt2);
   handleButton3(evt3);
+  handleButton4(evt4);
   s_buttons = current;
 
   unsigned long now = millis();
@@ -229,7 +230,6 @@ void loop() {
 void onModeChange() {
   noInterrupts();
   
-  // TODO: need to gracefully exit current mode, gracefully switch to next mode
   s_modeNum = s_nextModeNum;
 
   // Copy Mode from progmem
@@ -293,6 +293,19 @@ void handleButton3(uint8_t evt) {
   }
 }
 
+void handleButton4(uint8_t evt) {
+  if (!s_enabled || s_curMode.type != MANUAL || evt == NO_CHANGE) {
+    return;
+  }
+  // we're in manual mode, so drive SLOWCLK directly from
+  // the button input
+  if (evt == PRESS) {
+    digitalWrite(SLOWCLK_PIN, LOW);
+  } else {
+    digitalWrite(SLOWCLK_PIN, HIGH);
+  }
+}
+
 #ifdef DEBUG_DISPLAY_UPDATE
 uint8_t s_ticks;
 #endif
@@ -325,19 +338,19 @@ void updateDisplay() {
   display.setCursor(CLK_X, 10);
   display.print("CLK");
   display.drawCircle(CLK_IND_X, 13, 5, WHITE);
-  if (!(s_output & 1)) {
-    // manual/slow clock high, recall that the output is
-    // inverted by the NOR gate that combines the fast and
-    // slow clock outputs
-    display.fillCircle(CLK_IND_X, 13, 2, WHITE);
+  // The clock inidicator is only meaningful in manual mode
+  if (s_curMode.type == MANUAL) {
+    if (digitalRead(SLOWCLK_PIN) == HIGH) {
+      display.fillCircle(CLK_IND_X, 13, 2, WHITE);
+    }
   }
 
   display.setTextColor(WHITE);
   display.setCursor(RST_X, 10);
   display.print("RST");
   display.drawCircle(RST_IND_X, 13, 5, WHITE);
-  if (s_output & 2) {
-    // reset high
+  if (digitalRead(RST_PIN) == HIGH) {
+    // reset asserted
     display.fillCircle(RST_IND_X, 13, 2, WHITE);
   }
   
