@@ -200,6 +200,7 @@ ISR(TIMER1_OVF_vect) {
   }
   uint8_t poll = (s_slowCount & (1 << s_curMode.speed)) ? LOW : HIGH;
   digitalWrite(LED_BUILTIN, poll);
+  digitalWrite(SLOWCLK_PIN, poll);
   s_slowCount++;
 }
 
