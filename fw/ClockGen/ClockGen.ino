@@ -380,38 +380,38 @@ void updateDisplay() {
 
   if (s_enabled) {
     display.setTextColor(BLACK, WHITE);
-    display.fillRoundRect(EN_DIS_X, 6, 29, 15, 4, WHITE);
-    display.setCursor(9, 10);
+    display.fillRoundRect(EN_DIS_X, /*6*/0, 29, 15, 4, WHITE);
+    display.setCursor(9, /*10*/4);
     display.print("EN");
   } else {
     display.setTextColor(BLACK, WHITE);
-    display.drawRoundRect(EN_DIS_X, 6, 29, 15, 4, WHITE);
+    display.drawRoundRect(EN_DIS_X, /*6*/0, 29, 15, 4, WHITE);
     display.setTextColor(WHITE);
-    display.setCursor(6, 10);
+    display.setCursor(6, /*10*/4);
     display.print("DIS");
   }
 
   display.setTextColor(WHITE);
-  display.setCursor(CLK_X, 10);
+  display.setCursor(CLK_X, /*10*/4);
   display.print("CLK");
-  display.drawCircle(CLK_IND_X, 13, 5, WHITE);
+  display.drawCircle(CLK_IND_X, /*13*/7, 5, WHITE);
   // The clock inidicator is only meaningful in manual mode
   if (s_curMode.type == MANUAL) {
     // keep in mind that the SLOWCLK output is inverted
     // by the NOR gate that combines the slow and fast
     // clock signals
     if (digitalRead(SLOWCLK_PIN) == LOW) {
-      display.fillCircle(CLK_IND_X, 13, 2, WHITE);
+      display.fillCircle(CLK_IND_X, /*13*/7, 2, WHITE);
     }
   }
 
   display.setTextColor(WHITE);
-  display.setCursor(RST_X, 10);
+  display.setCursor(RST_X, /*10*/4);
   display.print("RST");
-  display.drawCircle(RST_IND_X, 13, 5, WHITE);
+  display.drawCircle(RST_IND_X, /*13*/7, 5, WHITE);
   if (digitalRead(RST_PIN) == HIGH) {
     // reset asserted
-    display.fillCircle(RST_IND_X, 13, 2, WHITE);
+    display.fillCircle(RST_IND_X, /*13*/7, 2, WHITE);
   }
   
   display.setTextSize(2);
